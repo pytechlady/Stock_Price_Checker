@@ -1,71 +1,39 @@
 import requests
+import os
 import csv
+import matplotlib.pyplot as plt
+import numpy as np
 
 
-api_token = 'c9j4j7iad3iblk5allq0'
-most_percentage_points_arr = []
+api_token = os.environ.get('API_KEY')
 
-# Endpoints for all FAANG company
-apple_url = 'https://finnhub.io//api/v1/quote?symbol=AAPL'
-google_url = 'https://finnhub.io//api/v1/quote?symbol=GOOGL'
-amazon_url = 'https://finnhub.io//api/v1/quote?symbol=AMZN'
-netflix_url = 'https://finnhub.io//api/v1/quote?symbol=NFLX'
-facebook_url = 'https://finnhub.io//api/v1/quote?symbol=META'
+
+url_path = 'https://finnhub.io//api/v1/quote?symbol={symbol}'
+
+# company code for all FAANG company
+companies = ['AAPL', 'GOOGL', 'AMZN', 'NFLX', 'META']
+stock_prices = []
 
 # Query the url using GET request to get all the stock information
-apple_response = requests.get(apple_url, headers={'X-Finnhub-Token': '{key}'.format(key=api_token)})
-google_response = requests.get(google_url, headers={'X-Finnhub-Token': '{key}'.format(key=api_token)})
-amazon_response = requests.get(amazon_url, headers={'X-Finnhub-Token': '{key}'.format(key=api_token)})
-netflix_response = requests.get(netflix_url, headers={'X-Finnhub-Token': '{key}'.format(key=api_token)})
-facebook_response = requests.get(facebook_url, headers={'X-Finnhub-Token': '{key}'.format(key=api_token)})
+for company in companies:
+    url = url_path.format(symbol=company)
+    response = requests.get(url, headers={'X-Finnhub-Token': '{key}'.format(key=api_token)})
+    data = response.json()
+    data_list = [value for (key, value) in data.items()]
+    stock_prices.append(data_list[0])
 
-# Convert to JSON object for accessibility
-apple_data = apple_response.json()
-google_data = google_response.json()
-amazon_data = amazon_response.json()
-netflix_data = netflix_response.json()
-facebook_data = facebook_response.json()
+    
+# Enter the stock information displayed in a bar chart
+x = np.array(companies)
+y = np.array(stock_prices)
 
-# Loop through each object to get a specific data
-apple_list = [value for (key, value) in apple_data.items()]
-google_list = [val for (k, val) in google_data.items()]
-amazon_list = [v for (x, v) in amazon_data.items()]
-netflix_list = [a for (b, a) in netflix_data.items()]
-facebook_list = [i for (y, i) in facebook_data.items()]
+plt.bar(x,y)
+# plt.pie(y, labels = x)
+plt.show()
 
-# Print the Latest stock price for all the companies
-print('Latest Apple stock = ' + str(apple_list[0]))
-print('Latest Google stock = ' + str(google_list[0]))
-print('Latest Amazon stock = ' + str(amazon_list[0]))
-print('Latest Netflix stock = ' + str(netflix_list[0]))
-print('Latest Facebook stock = ' + str(facebook_list[0]))
+# Write the stock information with the highest price to a csv file
+with open('volatile.csv', 'w', newline='') as file:
+    writer = csv.writer(file)
+    writer.writerow(["Company", "Stock Price"])
+    writer.writerow([x[np.argmax(y)], np.max(y)])
 
-
-# Find the company that has the the stock that moved the most percentage points from yesterday.
-apple_difference = apple_list[2]
-most_percentage_points_arr.append(apple_difference)
-
-google_difference = google_list[2]
-most_percentage_points_arr.append(google_difference)
-
-amazon_difference = amazon_list[2]
-most_percentage_points_arr.append(amazon_difference)
-
-netflix_difference = netflix_list[2]
-most_percentage_points_arr.append(netflix_difference)
-
-facebook_difference = facebook_list[2]
-most_percentage_points_arr.append(facebook_difference)
-
-print(most_percentage_points_arr)
-most_volatile_stock = max(most_percentage_points_arr)
-print(most_volatile_stock)
-
-# Write the most_volatile_stock details in CSV file
-header = ["stock_symbol", "percentage_change", "current_price", "last_close_price"]
-
-with open('volatile.csv', 'w', newline='') as f:
-    thewriter = csv.writer(f)
-
-    thewriter.writerow(header)
-    thewriter.writerow(['META', facebook_difference, facebook_list[0], facebook_list[6]])
